@@ -5,8 +5,9 @@ keep_md: true
 output: html_document
 ---
 ##HTML version
+
 **The HTML version can be accessed here**
-https://htmlpreview.github.io/?https://github.com/nwije/Course8Assignment/blob/master/8_Assignment.html
+https://nwije.github.io/PracticalML/
 
 
 ### Introduction
