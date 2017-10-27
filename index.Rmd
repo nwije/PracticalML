@@ -1,0 +1,155 @@
+---
+title: "Predicting type of weight lifting using accelerometer data"
+subtitle: "Course 8 Assignment"
+keep_md: true
+output: html_document
+---
+
+### Introduction
+The purpose of this analysis is to use data from a weight lifting study (Vellosa & al.) and create a prediction tool to predict which type of lift was performed using accelerometer measurements from the belt, forearm, arm and dumbell sensors. There are five classes of lift to be predicted: Class A: exactly according to the specification 
+Class B: throwing the elbows to the front 
+Class C: lifting the dumbbell only halfway
+Class D: lowering the dumbbell only halfway 
+Class E: throwing the hips to the front
+
+
+### Loading libraries and importing data
+```{r setup, include=FALSE}
+knitr:: opts_chunk$set(cache=TRUE, message=FALSE)
+```
+
+Load libraries and import training and testing data.
+```{r load}
+
+# Library
+library(caret)
+library(ggplot2)
+library(parallel)
+library(doParallel)
+
+# Import data
+trial <- read.csv("pml-training.csv")
+finaltest <- read.csv("pml-testing.csv")
+```
+
+
+### Explore data and remove unnecessary variables
+First, we explore the training data, and remove variables that have little relevance to predicting the `classe` variable, or have near zero variance.
+```{r explore, results="hide"}
+# Explore data
+names(trial)
+str(trial[,c(1:7)])
+table(trial$new_window)
+table(trial$num_window)
+
+
+# Remove variables not useful for prediction
+  # first seven variables unlikely to relate to class
+  trial <- trial[,-c(1:7)]    
+
+  #Near zero variance variables
+  nsv <- nearZeroVar(trial, saveMetrics=TRUE)
+  table(nsv$nzv)
+  nsv <- subset(nsv, nsv$nzv=="TRUE")
+  remove <- rownames(nsv)
+  trial <- trial[,!names(trial) %in% remove]
+```
+
+
+There are several variables with large numbers of NA values. 
+
+```{r}
+
+# Explore missing values
+trial$na <- apply(is.na(trial), 1, sum)
+table(trial$na)   #the majority of rows (19216 out of 19622 have 41 missing values)
+```
+
+On exploration, it is found that of the variables remaining, 41 have missing values in 98% of the data. These variables are dropped.
+```{r results="hide"}
+  # Assess which variables have NA
+  temp <- data.frame(colSums(is.na(trial)))
+  names(temp) <- c("na")
+  subset(temp, na>0)  # NA are all in the same variables for all 19216 rows.
+
+  # Omit these variables that are NA for 19216 rows from the dataset
+  omit <- rownames(subset(temp,na>0))
+  trial <- trial[,!(names(trial) %in% omit)]
+  trial <- subset(trial,select=-c(na))
+```
+
+
+### Create a model and validate it using training data
+We will now partition the training dataset to create a `train` and `test` dataset to create our models and test for accuracy
+
+```{r parition}
+# Create training and test sets from trial data
+set.seed(1234)
+inTrain <- createDataPartition(y=trial$classe, p=0.7, list=FALSE)
+train <- trial[inTrain,]
+test <- trial[-inTrain,]
+```
+
+We will now turn on parallel processing, and create a random forest model, with 10-fold cross validation.
+
+```{r}
+
+# Parallel processing
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl <- trainControl(method = "cv",
+                           number = 10,
+                           allowParallel = TRUE)
+
+# RF model
+mrf <- train(classe ~ ., method="rf", data=train, trControl = fitControl)
+mrf
+```
+
+To test the accuracy of this model, we predict the values in our test partition, then produce a confusion matrix.
+```{r}
+# Predict values on test set for each model
+rf <- predict(mrf, test)
+
+# Confusion matrix for each model
+accuracy <- confusionMatrix(rf, test$classe)$overall[1]
+confusionMatrix(rf, test$classe)
+```
+
+The confusion matrix demonstrates good accuracy of `r round(accuracy*100, 1)`%. 
+
+### Use model to predict values in the test set
+Finally, let us move onto predicting classe in the final test set.
+We process the final test set to remove variables that were dropped in our training data, then run the prediction using the random forest model from above.
+
+```{r process final test, results="hide"}
+# Process the final test set
+names(finaltest)
+finaltest <- finaltest[,-c(1:7)]
+finaltest <- finaltest[,!names(finaltest) %in% remove]  # variables identified in training with near 0 variance
+finaltest <- finaltest[,!(names(finaltest) %in% omit)] # variables identified in training with many NA values
+```
+
+
+The final prediction is shown.
+```{r}
+# Run the prediction
+predfinal <- data.frame(predict(mrf, finaltest))
+predfinal$num <- c(1:20)
+predfinal <- predfinal[,c(2,1)]
+names(predfinal) <- c("Item", "Predicted")
+predfinal
+```
+
+The **expected out of sample error is `r round((1-accuracy)*100, 1)`% (95 confidence interval 0.4-0.8%)**, as determined by the confusion matrix in the previous section.
+
+
+### Acknowledgements
+Data used from the following study:
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Further information on weight lifting data obtained from the following website [Accessed 27 October]: http://groupware.les.inf.puc-rio.br/har
+
+Code for turning on parallel processing and configuring k-fold cross validation obtained, with thanks, from https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-randomForestPerformance.md
+
