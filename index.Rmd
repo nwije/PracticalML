@@ -4,10 +4,11 @@ subtitle: "Course 8 Assignment"
 keep_md: true
 output: html_document
 ---
+
 ##HTML version
 
 **The HTML version can be accessed here**
-https://nwije.github.io/PracticalML/
+ https://htmlpreview.github.io/?https://github.com/nwije/PracticalML/blob/gh-pages/index.html
 
 
 ### Introduction
