@@ -123,7 +123,7 @@ accuracy <- confusionMatrix(rf, test$classe)$overall[1]
 confusionMatrix(rf, test$classe)
 ```
 
-The confusion matrix demonstrates good accuracy of `r round(accuracy*100, 1)`%. 
+The confusion matrix demonstrates good accuracy of 99.4%. 
 
 ### Use model to predict values in the test set
 Finally, let us move onto predicting classe in the final test set.
@@ -148,7 +148,7 @@ names(predfinal) <- c("Item", "Predicted")
 predfinal
 ```
 
-The **expected out of sample error is `r round((1-accuracy)*100, 1)`% (95 confidence interval 0.4-0.8%)**, as determined by the confusion matrix in the previous section.
+The **expected out of sample error is 0.6% (95 confidence interval 0.4-0.8%)**, as determined by the confusion matrix in the previous section.
 
 
 ### Acknowledgements
