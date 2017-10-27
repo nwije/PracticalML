@@ -4,6 +4,10 @@ subtitle: "Course 8 Assignment"
 keep_md: true
 output: html_document
 ---
+##HTML version
+**The HTML version can be accessed here**
+https://htmlpreview.github.io/?https://github.com/nwije/Course8Assignment/blob/master/8_Assignment.html
+
 
 ### Introduction
 The purpose of this analysis is to use data from a weight lifting study (Vellosa & al.) and create a prediction tool to predict which type of lift was performed using accelerometer measurements from the belt, forearm, arm and dumbell sensors. There are five classes of lift to be predicted: Class A: exactly according to the specification 
